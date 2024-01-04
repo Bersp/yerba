@@ -48,4 +48,4 @@ python -m pip install -i https://test.pypi.org/simple/ yerba
 ```
 
 ## Usage
-This section is a work in progress. For now, check [usage_example.md](examples/usage_example.md) and [usage_example.pdf](examples/usage_example.pdf) to give you and idea on how to use Yerba.
+This section is a work in progress. For now, check [usage_example.md](examples/usage_example.md) (use "code" view mode) and [usage_example.pdf](examples/usage_example.pdf) to give you and idea on how to use Yerba.

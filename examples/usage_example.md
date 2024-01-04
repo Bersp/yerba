@@ -1,6 +1,6 @@
 ---
 cover:
-  title: Usege example
+  title: Usage example
   subtitle: some example slides to see how [Yerba](color=GREEN) works
   author: Bernado L. Español
 ---
@@ -26,7 +26,7 @@ Additionally, you can write [colorful things](color=BLUE)
 
 >! pause
 
-```python mate
+```python yerba
 a1 = Arrow(start=LEFT+DOWN/3, end=2.5*LEFT+DOWN/3, color=GRAY)
 t1 = (p.add_text(r"Also, this space here was added using a \texttt{vspace}")
        .next_to(a1, RIGHT))
