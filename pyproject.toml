@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "yerba"
+version = "0.0.0-alpha"
+dependencies = [
+	"manim",
+	"manim-mobject-svg",
+	"markdown-it-py",
+	"mdformat",
+	"mdit-py-plugins",
+	"numpy",
+	"pillow",
+	"pyyaml"
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "Bernardo L. Español", email = "esp.bernardo@gmail.com"},
+]
+readme = "README.md"
+license = {file = "LICENSE.txt"}
