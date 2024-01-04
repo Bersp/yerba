@@ -11,9 +11,11 @@ And this is a subtitle
 -------------------
 
 Yo can write text, \textbf{in-line math} $f(x) = e^{x}$ and
+
 $$
   \text{math} \quad [\int](var="v")_0^{x} f(x')~ [dx](var="v") = f(x)
 $$
+
 out of line.
 
 >! vspace - 1

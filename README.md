@@ -15,7 +15,7 @@ Yerba is built on top of [Manim](https://github.com/ManimCommunity/manim), so it
 python -m manim --version
 ```
 
-### Latex
+### LaTex
 Currently, the only available backend for text processing is [XeTeX](https://en.wikipedia.org/wiki/XeTeX), an implementation of LaTeX with better font support. In most distributions, installing `texlive-xetex` should be sufficient. For example:
 ```bash
 # Ubuntu (Debian)
