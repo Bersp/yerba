@@ -42,9 +42,9 @@ You can check if you have it installed by running the following command:
 rsvg-convert --version
 ```
 
-Finally, you can install Yerba, for now, from TestPyPI:
+Finally, you can install Yerba from PyPI:
 ```bash
-python -m pip install -i https://test.pypi.org/simple/ yerba
+python -m pip install yerba
 ```
 
 ## Usage
