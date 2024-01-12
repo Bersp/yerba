@@ -23,12 +23,17 @@ class ImageSvgBase(VGroup):
                .set_stroke(opacity=0)
                .set_fill(color=colors["BLACK"], opacity=0.8))
 
-        # TODO(bersp): Change this to Ptex
-        super().__init__(
-            rec,
-            Ptex(filename, color=colors["BLACK"]).move_to(
-                rec).set(width=width*0.9)
-        )
+        if draft_mode:
+            tex_filename = filename.replace("_", r"\\_")
+            tex_filename = fr"\\texttt{{{tex_filename}}}"
+            super().__init__(
+                rec,
+                Ptex(tex_filename, color=colors["BLACK"]).move_to(
+                    rec).set(width=width*0.9)
+            )
+        else:
+            super().__init__(rec)
+
 
     def _manim_to_svg_coords(self):
         x0, y0 = self.get_corner(UL)[:2]
