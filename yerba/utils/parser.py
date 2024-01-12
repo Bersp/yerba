@@ -25,6 +25,10 @@ def get_slides_md_nodes(md_file, old_md_file) -> list[dict]:
     with open(md_file, "r") as f:
         text = f.read()
 
+    # scape all \ to use it literally in LaTex
+    text = text.replace("\\", "\\\\")
+    old_text = old_text.replace("\\", "\\\\")
+
     md = MarkdownIt("commonmark").use(front_matter_plugin)
     tokens = md.parse(text)
     nodes = SyntaxTreeNode(tokens)
