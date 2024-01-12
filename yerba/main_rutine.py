@@ -18,12 +18,14 @@ for k, v in colors.items():
 
 
 def exec_and_handle_exeption(func, msg, error_type="inline",
-                             verbose=None,
-                             **f_kwargs):
+                             f_args=None, f_kwargs=None, verbose=None):
+    f_args = f_args or list()
+    f_kargs = f_args or dict()
+
     if verbose is None:
         verbose = parser_params["errors.verbose"]
     try:
-        return func(**f_kwargs)
+        return func(*f_args, **f_kwargs)
     except BaseException as e:
         if verbose:
             manim.console.print_exception(suppress=(__file__, ))
@@ -80,17 +82,21 @@ class MainRutine:
         Presentation = exec_and_handle_exeption(
             make_presentation_from_template, error_type="custom",
             msg="There seems to be an error loading the template.",
-            template_name=self.template_name,
-            custom_template_name=self.custom_template_name
+            f_kwargs=dict(
+                template_name=self.template_name,
+                custom_template_name=self.custom_template_name
+            )
         )
         output_filename = str(os.path.splitext(self.filename)[0])+".pdf"
 
         p = exec_and_handle_exeption(
             Presentation, error_type="custom",
             msg="There seems to be an error initializing the presentation.",
-            output_filename=output_filename,
-            template_params=template_params,
-            colors=colors
+            f_kwargs=dict(
+                output_filename=output_filename,
+                template_params=template_params,
+                colors=colors
+            )
         )
         return p
 
@@ -98,23 +104,27 @@ class MainRutine:
         exec_and_handle_exeption(
             self.p.new_slide, error_type="custom",
             msg="There seems to be an error creating a new slide.",
-            slide_number=slide_number
+            f_kwargs=dict(slide_number=slide_number)
         )
 
     def compute_title(self, title):
         if title and title.lower() != "notitle":
-            title = exec_and_handle_exeption(self.p.add_title,
-                                             msg=title, text=title)
+            title = exec_and_handle_exeption(
+                self.p.add_title, msg=title, f_kwargs=dict(text=title)
+            )
 
     def compute_subtitle(self, node):
         subtitle = node.children[0].content
-        subtitle = exec_and_handle_exeption(self.p.add_subtitle,
-                                            msg=subtitle, text=subtitle)
+        subtitle = exec_and_handle_exeption(
+            self.p.add_subtitle, msg=subtitle, f_kwargs=dict(text=subtitle)
+        )
 
     def compute_paragraph(self, node):
         paragraph = self.render_md(node)
-        exec_and_handle_exeption(self.p.add_paragraph,
-                                 msg=paragraph, text=paragraph)
+        exec_and_handle_exeption(
+            self.p.add_paragraph,
+            msg=paragraph, f_kwargs=dict(text=paragraph)
+        )
 
     def compute_front_matter(self, node):
         metadata = yaml.safe_load(node.content)
@@ -133,7 +143,7 @@ class MainRutine:
             process_metadata,
             msg="There seems to be an error in the medatada.",
             error_type="custom",
-            metadata=metadata
+            f_kwargs=dict(metadata=metadata)
         )
 
         if "cover" in metadata:
@@ -156,8 +166,10 @@ class MainRutine:
                 # TODO(bersp): Use regex to identify >!`(.*)`
                 command = t.replace("!", "").replace("`", "").strip()
                 command = "p = self.p; pvars = self.p.pvars;" + command
-                exec_and_handle_exeption(lambda self, c: exec(c),
-                                         msg=f">{t}", self=self, c=command)
+                exec_and_handle_exeption(
+                    lambda self, c: exec(c),
+                    msg=f">{t}", f_kwargs=dict(self=self, c=command)
+                )
 
             elif t.strip().startswith("!"):
                 command, *args = (t.replace("!", "").strip()
@@ -174,13 +186,20 @@ class MainRutine:
                     else:
                         locals()[command] = eval(f"self.p.{command}()")
 
-                exec_and_handle_exeption(exec_command, msg=f">{t}",
-                                         self=self, command=command, args=args)
+                exec_and_handle_exeption(
+                    exec_command, msg=f">{t}",
+                    f_kwargs=dict(self=self, command=command, args=args)
+                )
 
     def compute_python_yerba(self, node):
         p = self.p
         pvars = self.p.pvars
-        exec(node.content)
+        command = "p = self.p; pvars = self.p.pvars;"+node.content
+        exec_and_handle_exeption(
+            lambda self, c: exec(c), error_type="custom",
+            msg=f"There seems to be an error in the yerba mate code.",
+            f_kwargs=dict(self=self, c=command)
+        )
 
     def run(self):
         slide0 = self.slides[0]
@@ -203,7 +222,7 @@ class MainRutine:
             exec_and_handle_exeption(
                 self.p.add_cover, error_type="custom",
                 msg="There seems to be an error creating the cover.",
-                **self.cover_metadata
+                f_kwargs=self.cover_metadata
             )
 
         for n, slide in enumerate(self.slides):
