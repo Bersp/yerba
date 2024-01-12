@@ -71,6 +71,7 @@ def markdown_to_manim_text_and_props(md_nodes):
 
 
 def process_enhanced_text(text):
+    # check if the text finish with [-](<props>)
     m = re.search(r"\[\-\]\(([^]]+)\)\s*$", text)
     if m:
         text = text.replace(m.group(0), "")

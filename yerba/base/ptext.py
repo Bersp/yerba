@@ -9,8 +9,8 @@ from ..properties import funcs_from_props
 class Ptex(Tex):
     def __init__(self, text, style="regular",
                  pvars: dict | None = None, **tex_kwargs):
-        tex_kwargs = define_default_kwargs(tex_kwargs, font_size=30)
 
+        tex_kwargs = define_default_kwargs(tex_kwargs, font_size=30)
         text, ismo_props_zip = process_enhanced_text(text)
 
         if style == 'regular':
@@ -18,7 +18,12 @@ class Ptex(Tex):
         elif style == "bold_italic":
             super().__init__(fr"\textbf{{\textit{{{text}}}}}", **tex_kwargs)
         else:
-            style = {"bold": "textbf", "italic": "textit"}[style]
+            try:
+                style = {"bold": "textbf", "italic": "textit"}[style]
+            except KeyError:
+                raise ValueError(
+                    "'style' must be 'regular', 'bold', 'italic' or 'bold_italic'"
+                )
             super().__init__(fr"\{style}{{{text}}}", **tex_kwargs)
 
         for imo, props in ismo_props_zip:
