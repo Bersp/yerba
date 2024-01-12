@@ -177,6 +177,15 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
     # -- specialized functions (you probably don't want to modify these)
 
     def add_text(self, text, box="null", **tex_kwargs):
+        # bold and italic, mrkdown
+        bold_pattern = re.compile(r'\*\*(.*?)\*\*')
+        italic_pattern = re.compile(r'\*(.*?)\*')
+        bold_italic_pattern = re.compile(r'\*\*\*(.*?)\*\*\*')
+
+        text = bold_pattern.sub(r'\\textbf{\1}', text)
+        text = italic_pattern.sub(r'\\textit{\1}', text)
+        text = bold_italic_pattern.sub(r'\\textbf{\\textit{\1}}', text)
+
         tex_kwargs = define_default_kwargs(
             tex_kwargs,
             tex_template=self.tex_template,
@@ -191,6 +200,7 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         tex_kwargs["tex_template"] = update_tex_enviroment_using_box(
             box, tex_kwargs["font_size"], tex_kwargs["tex_template"],
         )
+
 
         text_mo = Ptex(text, **tex_kwargs)
 

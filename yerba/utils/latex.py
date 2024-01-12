@@ -65,7 +65,9 @@ def markdown_to_manim_text_and_props(md_nodes):
             soft_brake_happend = True
 
         else:
-            raise ValueError(node)
+            raise ValueError(
+                f"nodes of type {node.type} are not implemented in the parser"
+            )
 
     return out_text, idx_submo, props
 
