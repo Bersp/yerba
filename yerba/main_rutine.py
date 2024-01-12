@@ -26,7 +26,7 @@ def exec_and_handle_exeption(func, msg, error_type="inline",
         return func(**f_kwargs)
     except BaseException as e:
         if verbose:
-            manim.console.print_exception()
+            manim.console.print_exception(suppress=(__file__, ))
 
         elif error_type == "inline":
             t = (msg.replace(r"%20", r" ")
