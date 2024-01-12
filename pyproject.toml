@@ -20,3 +20,6 @@ authors = [
 ]
 readme = "README.md"
 license = {file = "LICENSE.txt"}
+
+[project.scripts]
+yerba = "yerba.__main__:cli_entry"

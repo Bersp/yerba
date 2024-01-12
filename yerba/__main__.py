@@ -4,7 +4,7 @@ from .main_rutine import MainRutine
 from manim import logger
 
 
-def main():
+def cli_entry():
     if len(sys.argv) == 1:
         logger.error("You should specify an input filename")
         quit()
@@ -26,4 +26,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    cli_entry()
