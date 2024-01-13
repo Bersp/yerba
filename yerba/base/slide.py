@@ -96,11 +96,13 @@ class Slide:
             The slide number.
         """
 
+        self.slide_number: int = slide_number
         self.subslide_number: int = 0
+
         self.subslides: list[SubSlide] = [
             SubSlide(slide_number, self.subslide_number, background=background)
         ]
-        self.slide_number: int = slide_number
+
         self.following_mobjects: list[tuple[Mobject, Mobject]] = []
         self.boxes: list[Box] = []
 
@@ -122,28 +124,38 @@ class Slide:
     def apply_func_to_mobject(self, mobject, funcs, position="original",
                               f_args=None, f_kwargs=None) -> Mobject:
         """
-        Apply a function to a mobject.
+        Apply a function or a list of functions to a Mobject.
 
         Parameters
         ----------
-        mobject : mobject(s)
-            The mobject to modify.
-        func : callable
-            The function to apply to the mobject.
-        f_args, f_kwargs :
-            Arguments of func
+        mobject : Mobject
+            The Mobject to modify.
+        funcs : callable or list of callable
+            The function or list of functions to apply to the Mobject.
+        position : str, optional
+            Specifies where the modified Mobject should be positioned.
+        f_args : list, optional
+            Positional arguments for the functions.
+        f_kwargs : dict, optional
+            Keyword arguments for the functions.
 
         Returns
         -------
-        mobject
-            The modified mobject.
+        Mobject
+            The modified Mobject.
         """
+
         if f_args is None:
             f_args = []
         if f_kwargs is None:
             f_kwargs = {}
 
-        modified_mobject = mobject.copy()
+
+        if mobject.origin_subslide_number == self.subslide_number:
+            modified_mobject = mobject
+        else:
+            modified_mobject = mobject.copy()
+
         if isinstance(funcs, Callable):
             funcs(modified_mobject, *f_args, **f_kwargs)
         elif isinstance(funcs, Iterable):
@@ -152,17 +164,19 @@ class Slide:
         else:
             raise TypeError("'func' must be callable or list of callables")
 
-        self._replace_from_last_subslide(mobject, modified_mobject)
-        if position == "original":
-            self.following_mobjects.append((modified_mobject, mobject))
-        elif position == "modified":
-            mobject.box.replace(mobject, modified_mobject)
-            self.following_mobjects.append((mobject, modified_mobject))
-        elif position == "independent":
-            pass
-        else:
-            raise ValueError(
-                f"'position' must be 'original' or 'independent' not {repr(position)}")
+        if mobject.origin_subslide_number != self.subslide_number:
+            self._replace_from_last_subslide(mobject, modified_mobject)
+            if position == "original":
+                self.following_mobjects.append((modified_mobject, mobject))
+            elif position == "modified":
+                mobject.box.replace(mobject, modified_mobject)
+                self.following_mobjects.append((mobject, modified_mobject))
+            elif position == "independent":
+                pass
+            else:
+                raise ValueError(
+                    f"'position' must be 'original' or 'independent' not {repr(position)}"
+                )
 
         return modified_mobject
 
@@ -200,8 +214,10 @@ class Slide:
         for mo in mobjects:
             box = self._check_if_box_already_exists(mo.box)
             if not box.is_null:
+                mo.origin_subslide_number = self.subslide_number
                 box.add(mo)
-                self._add_to_subslide([mo], idx)
+
+        self._add_to_subslide(mobjects, idx)
 
         return mobjects
 

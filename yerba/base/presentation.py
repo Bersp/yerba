@@ -51,6 +51,7 @@ def make_presentation_from_template(template_name, custom_template_name):
             super().__init__(*args, **kwargs)
 
             self.slide_number: int = -1
+            self.subslide_number: int = 0
             self.current_slide: Slide | None = None
             self.pvars: dict = defaultdict(list)
 
@@ -72,6 +73,7 @@ def make_presentation_from_template(template_name, custom_template_name):
             background = self.background()
             s = Slide(self.slide_number, background=background)
             self.current_slide = s
+            self.subslide_number = self.current_slide.subslide_number
 
             self.do_after_create_new_slide()
 
@@ -122,7 +124,9 @@ def make_presentation_from_template(template_name, custom_template_name):
         def pause(self, *args, **kwargs):
             if self.current_slide is None:
                 raise ValueError("The presentation does not have any slide")
-            return self.current_slide.add_new_subslide(*args, **kwargs)
+            self.current_slide.add_new_subslide(*args, **kwargs)
+            self.subslide_number = self.current_slide.subslide_number
+            return None
 
         def add(self, mobjects, idx=-1, box=None):
             if self.current_slide is None:
@@ -133,7 +137,7 @@ def make_presentation_from_template(template_name, custom_template_name):
 
             if box is None:
                 for mo in mobjects:
-                    if not hasattr(mo, 'box'):
+                    if not hasattr(mo, "box"):
                         mo.box = self.get_box("active")
             else:
                 for mo in mobjects:
@@ -151,7 +155,8 @@ def make_presentation_from_template(template_name, custom_template_name):
                 raise ValueError("The presentation does not have any slide")
 
             if isinstance(mo_or_pvar, str) and mo_or_pvar in self.pvars:
-                return [self.current_slide.apply_func_to_mobject(mo, *args, **kwargs)
+                return [self.current_slide
+                        .apply_func_to_mobject(mo, *args, **kwargs)
                         for mo in self.pvars[mo_or_pvar]]
             else:
                 return self.current_slide.apply_func_to_mobject(mo_or_pvar, *args, **kwargs)
@@ -161,10 +166,12 @@ def make_presentation_from_template(template_name, custom_template_name):
                 raise ValueError("The presentation does not have any slide")
 
             if isinstance(mo_or_pvar, str) and mo_or_pvar in self.pvars:
-                return [self.current_slide.modify_mobject_props(mo, *args, **kwargs)
+                return [self.current_slide
+                        .modify_mobject_props(mo, *args, **kwargs)
                         for mo in self.pvars[mo_or_pvar]]
             else:
-                return self.current_slide.modify_mobject_props(mo_or_pvar, *args, **kwargs)
+                return self.current_slide.modify_mobject_props(mo_or_pvar,
+                                                               *args, **kwargs)
 
         def become(self, old: VMobject | str, new: VMobject | str,
                    *args, **kwargs):

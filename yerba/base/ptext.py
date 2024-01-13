@@ -8,7 +8,9 @@ from ..properties import funcs_from_props
 
 class Ptex(Tex):
     def __init__(self, text, style="regular",
-                 pvars: dict | None = None, **tex_kwargs):
+                 pvars: dict | None = None,
+                 subslide_number: int | None = None,
+                 **tex_kwargs):
 
         tex_kwargs = define_default_kwargs(tex_kwargs, font_size=30)
         text, ismo_props_zip = process_enhanced_text(text)
@@ -42,6 +44,9 @@ class Ptex(Tex):
                     pvars[name] = [mo]
                 else:
                     pvars[name].append(mo)
+
+                if subslide_number is not None:
+                    mo.origin_subslide_number = subslide_number
 
             funcs = funcs_from_props(props)
             for f in funcs:

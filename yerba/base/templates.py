@@ -16,6 +16,7 @@ from ..utils.constants import DOWN, LEFT, ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT
 
 class PresentationTemplateAbstract(metaclass=ABCMeta):
     slide_number: int
+    subslide_number: int
     pvars: dict[str, list]
 
     tex_template: TexTemplate
@@ -202,7 +203,8 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         )
 
 
-        text_mo = Ptex(text, **tex_kwargs)
+        text_mo = Ptex(text, subslide_number=self.subslide_number,
+                       **tex_kwargs)
 
         predefined_box = getattr(text_mo, "box", None)
         if predefined_box is None:
@@ -226,7 +228,8 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
 
         box = self.get_box(box)
 
-        math_mo = Ptex(text, **tex_kwargs)
+        math_mo = Ptex(text, subslide_number=self.subslide_number,
+                       **tex_kwargs)
 
         predefined_box = getattr(math_mo, "box", None)
         if predefined_box is None:
