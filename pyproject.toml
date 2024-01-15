@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "yerba"
-version = "0.0.1-alpha-dev0"
+version = "0.0.1-alpha-dev1"
 dependencies = [
 	"manim",
 	"manim-mobject-svg",
@@ -23,3 +23,6 @@ license = {file = "LICENSE.txt"}
 
 [project.scripts]
 yerba = "yerba.__main__:cli_entry"
+
+[tool.setuptools]
+py-modules = []
