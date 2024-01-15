@@ -178,14 +178,16 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
     # -- specialized functions (you probably don't want to modify these)
 
     def add_text(self, text, box="null", **tex_kwargs):
-        # bold and italic, mrkdown
-        bold_pattern = re.compile(r'\*\*(.*?)\*\*')
-        italic_pattern = re.compile(r'\*(.*?)\*')
-        bold_italic_pattern = re.compile(r'\*\*\*(.*?)\*\*\*')
+        # bold, italic and monospace in markdown
+        bold_pattern = re.compile(r'(\*\*|__)(.*?)\1')
+        italic_pattern = re.compile(r'(\*|_)(.*?)\1')
+        bold_italic_pattern = re.compile(r'(\*\*\*|___)(.*?)\1')
+        monospace_pattern = re.compile(r'`([^`]+)`')
 
-        text = bold_pattern.sub(r'\\textbf{\1}', text)
-        text = italic_pattern.sub(r'\\textit{\1}', text)
-        text = bold_italic_pattern.sub(r'\\textbf{\\textit{\1}}', text)
+        text = bold_pattern.sub(r'\\textbf{\2}', text)
+        text = italic_pattern.sub(r'\\textit{\2}', text)
+        text = bold_italic_pattern.sub(r'\\textbf{\\textit{\2}}', text)
+        text = monospace_pattern.sub(r'\\texttt{\1}', text)
 
         tex_kwargs = define_default_kwargs(
             tex_kwargs,
