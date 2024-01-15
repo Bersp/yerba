@@ -1,4 +1,9 @@
-# Yerba
+<p align="center">
+    <a href="https://github.com/bersp/yerba">
+        <img src="https://raw.githubusercontent.com/bersp/yerba/main/logo/Yerba.png">
+    </a>
+</p>
+<br />
 
 Yerba is a Python CLI application that facilitates creating presentations by writing files in markdown format. The goal is to build an application that allows for creating aesthetically pleasing presentations in a short amount of time, while also being highly customizable and versatile.
 
@@ -48,4 +53,11 @@ python -m pip install yerba
 ```
 
 ## Usage
-This section is a work in progress. For now, check [usage_example.md](examples/usage_example.md) (use "code" view mode) and [usage_example.pdf](examples/usage_example.pdf) to give you and idea on how to use Yerba.
+
+This section is a work in progress. For now, check [usage_example.md](examples/usage_example.md) (use "code" view mode) and [usage_example.pdf](examples/usage_example.pdf) to give you and idea on how to use Yerba. You can render this presentation using:
+```
+yerba usage_example.md
+# or
+python -m yerba usage_example.md
+```
+---

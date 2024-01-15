@@ -10,7 +10,7 @@ This is a title
 And this is a subtitle
 -------------------
 
-Yo can write text, \textbf{in-line math} $f(x) = e^{x}$ and
+Yo can write text, **in-line math** $f(x) = e^{x}$ and
 
 $$
   \text{math} \quad [\int](var="v")_0^{x} f(x')~ [dx](var="v") = f(x)
@@ -28,7 +28,7 @@ Additionally, you can write [colorful things](color=BLUE)
 
 ```python yerba
 a1 = Arrow(start=LEFT+DOWN/3, end=2.5*LEFT+DOWN/3, color=GRAY)
-t1 = (p.add_text(r"Also, this space here was added using a \texttt{vspace}")
+t1 = (p.add_text(r"Also, this space here was added using a `vspace`")
        .next_to(a1, RIGHT))
 
 p.add([a1, t1], box="floating")
@@ -47,7 +47,7 @@ p.remove([a1, a2, t1, t2])
 
 >! set box - 'full'
 
-Even you can do [other things](fill_color=[WHITE,GREEN,WHITE]) with the text and math
+You can even do [other things](fill_color=[WHITE,GREEN,WHITE]) with the text and math
 
 $$
   [2](color=RED,var="v1") + [3](color=BLUE,var="v2")
@@ -68,7 +68,7 @@ A bit about grids and subgrids
 
 >! set box - 'A', arrange='center'
 
-This is one \textit{box}.
+This is one _box_.
 $$
     \int 2 ~d x = 2t
 $$
