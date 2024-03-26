@@ -15,6 +15,10 @@ from .defaults import parser_params, template_params, colors
 for k, v in colors.items():
     globals()[k] = v
 
+_code_blocks_namedict = {
+    "python_yerba": ["python yerba", "yerba"],
+}
+
 
 def exec_and_handle_exeption(func, msg, error_type="inline",
                              f_args=None, f_kwargs=None, verbose=None):
@@ -103,8 +107,13 @@ class MainRutine:
         )
 
     def compute_title(self, title):
-        if title and title.lower() != "notitle":
-            title = exec_and_handle_exeption(
+        if not title or title.lower() == "notitle":
+            exec_and_handle_exeption(
+                self.p.set_box, msg=title,
+                f_kwargs=dict(box="full_with_margins")
+            )
+        else:
+            exec_and_handle_exeption(
                 self.p.add_title, msg=title, f_kwargs=dict(text=title)
             )
 
@@ -112,13 +121,6 @@ class MainRutine:
         subtitle = node.children[0].content
         subtitle = exec_and_handle_exeption(
             self.p.add_subtitle, msg=subtitle, f_kwargs=dict(text=subtitle)
-        )
-
-    def compute_paragraph(self, node):
-        paragraph = self.p.render_md(node)
-        exec_and_handle_exeption(
-            self.p.add_paragraph,
-            msg=paragraph, f_kwargs=dict(text=paragraph)
         )
 
     def compute_front_matter(self, node):
@@ -186,14 +188,21 @@ class MainRutine:
                     f_kwargs=dict(self=self, command=command, args=args)
                 )
 
-    def compute_python_yerba(self, node):
+    def compute_python_yerba_block(self, node):
         p = self.p
         pvars = self.p.pvars
         command = "p = self.p; pvars = self.p.pvars;"+node.content
         exec_and_handle_exeption(
             lambda self, c: exec(c), error_type="custom",
-            msg=f"There seems to be an error in the yerba mate code.",
+            msg="There seems to be an error in the yerba mate code.",
             f_kwargs=dict(self=self, c=command)
+        )
+
+    def compute_paragraph(self, node):
+        paragraph = self.p.render_md(node)
+        exec_and_handle_exeption(
+            self.p.add_paragraph,
+            msg=paragraph, f_kwargs=dict(text=paragraph)
         )
 
     def run(self):
@@ -248,9 +257,16 @@ class MainRutine:
                     self.compute_paragraph(node)
                 elif node.type == "blockquote":
                     self.compute_blockquote(node)
-                elif (node.type == "fence" and node.tag == "code"
-                      and node.info == "python yerba"):
-                    self.compute_python_yerba(node)
+                elif (node.type == "fence" and node.tag == "code"):
+                    for block_type, names in _code_blocks_namedict.items():
+                        if node.info in names:
+                            f = exec_and_handle_exeption(
+                                getattr,
+                                msg=f"'{node.info} block' is not defined",
+                                error_type="custom",
+                                f_args=(self, f"compute_{block_type}_block")
+                            )
+                            f(node)
                 else:
                     pass
 

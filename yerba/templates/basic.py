@@ -1,4 +1,4 @@
-from yerba.base.templates import PresentationTemplateBase
+from yerba.templates.base import PresentationTemplateBase
 
 
 class PresentationTemplate(PresentationTemplateBase):

@@ -47,7 +47,9 @@ template_params: dict[str, str | float | bool] = {
     "math.color": colors["BLACK"],
 
     "box.new_slide_default": "content",
-    "box.margin_full.margin": 0.7,
+
+    "box.full_with_margins.margins": 0.7,
+    "box.content.arrange": "top left"
 
 }
 

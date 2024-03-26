@@ -158,10 +158,10 @@ def make_presentation_from_template(template_name, custom_template_name):
 
             return self.current_slide.add_to_subslide(mobjects, idx)
 
-        def remove(self, *args, **kwargs):
+        def remove(self, mobjects):
             if self.current_slide is None:
                 raise ValueError("The presentation does not have any slide")
-            return self.current_slide.remove_from_subslide(*args, **kwargs)
+            return self.current_slide.remove_from_subslide(mobjects)
 
         def apply(self, mo_or_pvar, *args, **kwargs):
             if self.current_slide is None:
@@ -204,6 +204,7 @@ def make_presentation_from_template(template_name, custom_template_name):
                     "new": "modified",
                 }[kwargs["position"]]
 
+            new.origin_subslide_number = self.subslide_number
             return self.current_slide.apply_func_to_mobject(
                 old, lambda old, new: old.become(new),
                 f_args=[new], *args, **kwargs

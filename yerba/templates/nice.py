@@ -5,7 +5,7 @@ import manim
 
 from manim import (VMobject, VGroup, Circle, Rectangle, Difference)
 
-from yerba.base.templates import PresentationTemplateBase
+from yerba.templates.base import PresentationTemplateBase
 
 from yerba.utils.others import define_default_kwargs
 from yerba.base.ptext import Ptex

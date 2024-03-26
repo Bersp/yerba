@@ -5,7 +5,7 @@ from manim import VMobject, VGroup, Rectangle
 from ..defaults import box_params, colors
 from ..utils.constants import (
     UP, DOWN, LEFT, RIGHT, ORIGIN, SLIDE_HEIGHT, SLIDE_WIDTH,
-    LEFT_EDGE, RIGHT_EDGE, SLIDE_X_RAD, SLIDE_Y_RAD, TOP_EDGE, BOTTOM_EDGE
+    LEFT_EDGE, RIGHT_EDGE, SLIDE_X_RAD, SLIDE_Y_RAD, TOP_EDGE, BOTTOM_EDGE, UL, DR
 )
 from ..utils.others import (restructure_list_to_exclude_certain_family_members,
                             replace_in_list)
@@ -16,6 +16,7 @@ class Box():
                  width: float, height: float, arrange: str | None = "top left",
                  arrange_buff: float = box_params["arrange_buff"],
                  is_null: bool = False):
+
         self.center = center
         self.width = width
         self.height = height
@@ -27,15 +28,29 @@ class Box():
         self.mobjects: list = []
 
     @classmethod
-    def from_vertex(cls, tl_vertex: tuple[float, float],
-                    br_vertex: tuple[float, float], **kwargs):
-        top_edge, left_edge = tl_vertex
-        bottom_edge, right_edge = br_vertex
+    def from_vertex(cls, ul_vertex: tuple[float, float],
+                    dr_vertex: tuple[float, float], **kwargs):
+        left_edge, top_edge = ul_vertex
+        right_edge, bottom_edge = dr_vertex
         center = np.array(
             [(right_edge+left_edge)/2, (top_edge+bottom_edge)/2, 0])
         width = right_edge-left_edge
         height = top_edge-bottom_edge
         return cls(center, width, height, **kwargs)
+
+    @classmethod
+    def from_mo(cls, mo, **kwargs):
+        return cls.from_vertex(
+            ul_vertex=mo.get_corner(UL)[:-1],
+            dr_vertex=mo.get_corner(DR)[:-1],
+            **kwargs
+        )
+
+    @classmethod
+    def from_box(cls, box, **kwargs):
+        return cls(center=box.center,
+                   width=box.width, height=box.height,
+                   arrange=box.arrange)
 
     @classmethod
     def get_full_box(cls, arrange):
@@ -92,8 +107,8 @@ class Box():
         top_edge = max([b.center[1]+b.height/2 for b in boxes])
         bottom_edge = min([b.center[1]-b.height/2 for b in boxes])
 
-        return Box.from_vertex(tl_vertex=(top_edge, left_edge),
-                               br_vertex=(bottom_edge, right_edge),
+        return Box.from_vertex(ul_vertex=(left_edge, top_edge),
+                               dr_vertex=(right_edge, bottom_edge),
                                arrange=arrange)
 
     def add(self, mobject) -> None:
@@ -258,12 +273,28 @@ class Box():
 
     # ---
 
+    def set_center(self, value):
+        self.center = value
+        return self
+
+    def set_width(self, value):
+        self.width = value
+        return self
+
+    def set_height(self, value):
+        self.height = value
+        return self
+
     def set_arrange(self, value):
         self.arrange = None if value == "none" else value
         return self
 
     def set_arrange_buff(self, value):
         self.arrange_buff = value
+        return self
+
+    def null(self, value=True):
+        self.is_null = value
         return self
 
     # ---
@@ -290,7 +321,8 @@ class Box():
                 self.width == other_box.width and
                 self.height == other_box.height and
                 self.arrange == other_box.arrange and
-                self.arrange_buff == other_box.arrange_buff)
+                self.arrange_buff == other_box.arrange_buff and
+                self.is_null == other_box.is_null)
 
     def __repr__(self):
         c = f"[{self.center[0]:.2g}, {self.center[1]:.2g}]"

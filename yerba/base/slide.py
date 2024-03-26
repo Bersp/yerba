@@ -4,7 +4,9 @@ from collections.abc import Iterable, Callable
 
 from ..defaults import colors
 from ..properties import funcs_from_props
-from ..utils.constants import SLIDE_HEIGHT, SLIDE_WIDTH
+from ..utils.constants import (
+    SLIDE_HEIGHT, SLIDE_WIDTH, UP, LEFT, RIGHT, ORIGIN
+)
 from ..utils.others import restructure_list_to_exclude_certain_family_members
 from .box import Box
 from .image import ImageSvg, ImagePDFSvg
@@ -150,7 +152,6 @@ class Slide:
         if f_kwargs is None:
             f_kwargs = {}
 
-
         if mobject.origin_subslide_number == self.subslide_number:
             modified_mobject = mobject
         else:
@@ -199,7 +200,7 @@ class Slide:
         )
         return modified_mobject
 
-    def add_to_subslide(self, mobjects, idx=-1) -> None:
+    def add_to_subslide(self, mobjects: list, idx=-1) -> list:
         """
         Add mobjects to a subslide.
 
@@ -211,13 +212,15 @@ class Slide:
             Index of the subslide to add to. (Default is -1, which refers to the last subslide)
         """
 
+        to_add = []
         for mo in mobjects:
             box = self._check_if_box_already_exists(mo.box)
             if not box.is_null:
                 mo.origin_subslide_number = self.subslide_number
                 box.add(mo)
+                to_add.append(mo)
 
-        self._add_to_subslide(mobjects, idx)
+        self._add_to_subslide(to_add, idx)
 
         return mobjects
 

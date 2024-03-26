@@ -9,10 +9,10 @@ from mdit_py_plugins.dollarmath import dollarmath_plugin
 
 from ..utils.others import define_default_kwargs
 from ..utils.latex import update_tex_enviroment_using_box, add_font_to_preamble
-from .image import ImageSvg, ImagePDFSvg
-from .ptext import Ptex
-from .box import Box, NamedBoxes
-from .slide import Slide
+from ..base.image import ImageSvg, ImagePDFSvg
+from ..base.ptext import Ptex
+from ..base.box import Box, NamedBoxes
+from ..base.slide import Slide
 
 from ..utils.constants import DOWN, LEFT, ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT
 
@@ -34,7 +34,28 @@ class PresentationTemplateAbstract(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add(self, mobjects: VMobject | list[VMobject]) -> VMobject:
+    def add(self, mobjects: VMobject | list[VMobject],
+            box: Box | str) -> VMobject:
+        pass
+
+    @abstractmethod
+    def remove(self, mobjects: VMobject | list[VMobject]) -> VMobject:
+        pass
+
+    @abstractmethod
+    def pause(self) -> VMobject:
+        pass
+
+    @abstractmethod
+    def apply(self, mobjects: VMobject | list[VMobject]) -> VMobject:
+        pass
+
+    @abstractmethod
+    def modify(self, mobjects: VMobject | list[VMobject]) -> VMobject:
+        pass
+
+    @abstractmethod
+    def become(self, mobjects: VMobject | list[VMobject]) -> VMobject:
         pass
 
     @abstractmethod
@@ -74,12 +95,12 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
             right_box=d["right_margin"],
             top_box=d["title"],
             bottom_box=d["footer"],
-            arrange="top left"
+            arrange=self.template_params["box.content.arrange"]
         )
 
         d["full"] = Box.get_full_box(arrange="center")
         d["floating"] = Box.get_full_box(arrange="none")
-        m = self.template_params["box.margin_full.margin"]
+        m = self.template_params["box.full_with_margins.margins"]
         d["full_with_margins"] = Box.get_full_box(arrange="center").shrink(
             left_gap=m, right_gap=m, top_gap=m, bottom_gap=m,
         )
@@ -101,7 +122,7 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         tt.add_to_preamble(r"""
         \usepackage[no-math]{fontspec}
         \usepackage{ragged2e}
-        """+"\n"+self.template_params["add_to_preamble"])
+        """+"\n" + self.template_params["add_to_preamble"])
         return tt
 
     def set_main_font(self, regular, bold, italic, bold_italic, fonts_path=None):
