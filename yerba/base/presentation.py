@@ -3,11 +3,13 @@ import os
 import shutil
 import importlib
 from collections import defaultdict
+from mdformat.renderer import MDRenderer
 
 from manim import VMobject, logger
 
 from .slide import Slide
 from .box import Box
+from ..utils.latex import YerbaRenderers
 
 
 def make_presentation_from_template(template_name, custom_template_name):
@@ -54,6 +56,9 @@ def make_presentation_from_template(template_name, custom_template_name):
             self.subslide_number: int = 0
             self.current_slide: Slide | None = None
             self.pvars: dict = defaultdict(list)
+
+            self.renderer: MDRenderer = MDRenderer()
+            self.yerba_renderers: YerbaRenderers = YerbaRenderers()
 
         def new_slide(self, slide_number=None) -> Slide:
             self.named_boxes.set_current_box('new_slide_default')
@@ -118,6 +123,14 @@ def make_presentation_from_template(template_name, custom_template_name):
                     return box
             else:
                 raise ValueError(err_msg)
+
+        def render_md(self, node):
+            return self.renderer.render(
+                node.to_tokens(), {
+                    "parser_extension": [
+                        self.yerba_renderers]
+                }, {}
+            )
 
         #  -- Slides methods --
 

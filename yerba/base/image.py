@@ -34,7 +34,6 @@ class ImageSvgBase(VGroup):
         else:
             super().__init__(rec)
 
-
     def _manim_to_svg_coords(self):
         x0, y0 = self.get_corner(UL)[:2]
         x0 = (SLIDE_X_RAD+x0)*TO_PX
@@ -115,8 +114,8 @@ class ImagePDFSvg(ImageSvgBase):
         svg_str_raw = self._get_svg_str_raw(filename)
         self.xml_tree = ElementTree.fromstring(svg_str_raw)
 
-        fw = float(self.xml_tree.get('width') or 1)
-        fh = float(self.xml_tree.get('height') or 1)
+        fw = float(self.xml_tree.get('width').replace("pt", ""))
+        fh = float(self.xml_tree.get('height').replace("pt", ""))
         width, height = self._get_width_and_height(width, height, fw, fh)
 
         super().__init__(filename, width, height, draft_mode)
@@ -133,9 +132,10 @@ class ImagePDFSvg(ImageSvgBase):
         return s
 
     def _get_svg_str_raw(self, filename):
-        s = subprocess.run(["inkscape", "--export-plain-svg",
-                            "--export-type=svg", "--export-filename=-",
-                            filename],
+        s = subprocess.run(["inkscape",
+                            "--pdf-poppler",
+                            "--export-plain-svg", "--export-type=svg",
+                            "--export-filename=-", filename],
                            stdout=subprocess.PIPE, stderr=open(os.devnull, "w")
                            ).stdout.decode("utf-8")
 

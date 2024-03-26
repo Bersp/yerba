@@ -1,5 +1,4 @@
 from __future__ import annotations
-from mdformat.renderer import MDRenderer
 import yaml
 import shutil
 import os
@@ -19,8 +18,8 @@ for k, v in colors.items():
 
 def exec_and_handle_exeption(func, msg, error_type="inline",
                              f_args=None, f_kwargs=None, verbose=None):
-    f_args = f_args or list()
-    f_kargs = f_args or dict()
+    f_args = f_args or tuple()
+    f_kwargs = f_kwargs or dict()
 
     if verbose is None:
         verbose = parser_params["errors.verbose"]
@@ -37,10 +36,10 @@ def exec_and_handle_exeption(func, msg, error_type="inline",
                  .replace(r"%5D", r"]"))
             manim.logger.error(
                 f"There seems to be an error with the following line:\n{t}"
-                f"\nError: {e}"
+                f"\nPython error: {e}"
             )
         elif error_type == "custom":
-            manim.logger.error(msg+f"\nError: {e}")
+            manim.logger.error(msg+f"\nPython error: {e}")
         else:
             raise ValueError("'error_type' must be 'inline' or 'custom'")
 
@@ -53,7 +52,6 @@ class MainRutine:
         create_folder_structure()
 
         self.filename: str = filename
-        self.renderer: MDRenderer = MDRenderer()
         self.cover_metadata: dict | None = None
 
         old_filename = f"./media/.old.{filename}"
@@ -67,9 +65,6 @@ class MainRutine:
 
         self.template_name: str = "nice"
         self.custom_template_name: str | None = None
-
-    def render_md(self, node):
-        return self.renderer.render(node.to_tokens(), {}, {})
 
     @staticmethod
     def use_backup_slide(slide_number):
@@ -120,7 +115,7 @@ class MainRutine:
         )
 
     def compute_paragraph(self, node):
-        paragraph = self.render_md(node)
+        paragraph = self.p.render_md(node)
         exec_and_handle_exeption(
             self.p.add_paragraph,
             msg=paragraph, f_kwargs=dict(text=paragraph)
@@ -249,7 +244,7 @@ class MainRutine:
                     else:
                         manim.logger.error(
                             f"{node.tag} is not implemented in the parser")
-                elif node.type == "paragraph":
+                elif node.type == "paragraph" or node.type == "math_block":
                     self.compute_paragraph(node)
                 elif node.type == "blockquote":
                     self.compute_blockquote(node)

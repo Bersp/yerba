@@ -1,6 +1,7 @@
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 from mdit_py_plugins.front_matter import front_matter_plugin
+from mdit_py_plugins.dollarmath import dollarmath_plugin
 
 
 def are_nodes_equal(node1, node2):
@@ -25,15 +26,13 @@ def get_slides_md_nodes(md_file, old_md_file) -> list[dict]:
     with open(md_file, "r") as f:
         text = f.read()
 
-    # scape all \ to use it literally in LaTex
-    text = text.replace("\\", "\\\\")
-    old_text = old_text.replace("\\", "\\\\")
-
-    md = MarkdownIt("commonmark").use(front_matter_plugin)
+    md = (MarkdownIt("commonmark")
+          .use(front_matter_plugin)
+          .use(dollarmath_plugin, allow_space=True, double_inline=True)
+          )
     tokens = md.parse(text)
     nodes = SyntaxTreeNode(tokens)
 
-    md = MarkdownIt("commonmark").use(front_matter_plugin)
     tokens = md.parse(old_text)
     old_nodes = SyntaxTreeNode(tokens)
 

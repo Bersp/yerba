@@ -3,6 +3,10 @@ import re
 import pkg_resources
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
+import mdformat
+from mdformat.renderer._context import (
+    DEFAULT_RENDERERS, make_render_children, longest_consecutive_sequence
+)
 
 from .constants import *
 from ..defaults import colors
@@ -86,6 +90,32 @@ def process_enhanced_text(text):
     ismo_props_zip = zip([-1]+idx_submo, [general_props]+props)
 
     return manim_text, ismo_props_zip
+
+
+class YerbaRenderers:
+    """This a clase to parse markdown_it nodes with mdformat"""
+    def __init__(self):
+        t = DEFAULT_RENDERERS["text"]
+        self.RENDERERS = {
+            "em": self.em,
+            "strong": self.strong,
+            "code_inline": self.code_inline,
+            "math_inline": lambda s, _: f"${s.content}$",
+            "math_inline_double": lambda s, _: f"$${s.content}$$",
+            "math_block": lambda s, _: f"$${s.content}$$",
+        }
+
+    def em(self, node, context) -> str:
+        text = make_render_children(separator="")(node, context)
+        return fr"\textit{{{text}}}"
+
+    def strong(self, node, context) -> str:
+        text = make_render_children(separator="")(node, context)
+        return fr"\textbf{{{text}}}"
+
+    def code_inline(self, node, context) -> str:
+        code = node.content
+        return fr"\texttt{{{code}}}"
 
 # ---
 

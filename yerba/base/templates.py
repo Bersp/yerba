@@ -1,15 +1,18 @@
 from __future__ import annotations
 import re
 from functools import cached_property
-from typing import Any
 from manim import (VMobject, VGroup, TexTemplate, Rectangle)
 from abc import ABCMeta, abstractmethod
+from markdown_it import MarkdownIt
+from markdown_it.tree import SyntaxTreeNode
+from mdit_py_plugins.dollarmath import dollarmath_plugin
 
 from ..utils.others import define_default_kwargs
 from ..utils.latex import update_tex_enviroment_using_box, add_font_to_preamble
 from .image import ImageSvg, ImagePDFSvg
 from .ptext import Ptex
 from .box import Box, NamedBoxes
+from .slide import Slide
 
 from ..utils.constants import DOWN, LEFT, ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT
 
@@ -18,6 +21,7 @@ class PresentationTemplateAbstract(metaclass=ABCMeta):
     slide_number: int
     subslide_number: int
     pvars: dict[str, list]
+    current_slide: Slide
 
     tex_template: TexTemplate
 
@@ -35,6 +39,10 @@ class PresentationTemplateAbstract(metaclass=ABCMeta):
 
     @abstractmethod
     def get_box(self, box: str | Box) -> Box:
+        pass
+
+    @abstractmethod
+    def render_md(self, node) -> str:
         pass
 
     def text(self, text, color=None, font_size=None, style="regular",
@@ -178,17 +186,6 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
     # -- specialized functions (you probably don't want to modify these)
 
     def add_text(self, text, box="null", **tex_kwargs):
-        # bold, italic and monospace in markdown
-        bold_pattern = re.compile(r'(\*\*|__)(.*?)\1')
-        italic_pattern = re.compile(r'(\*|_)(.*?)\1')
-        bold_italic_pattern = re.compile(r'(\*\*\*|___)(.*?)\1')
-        monospace_pattern = re.compile(r'`([^`]+)`')
-
-        text = bold_pattern.sub(r'\\textbf{\2}', text)
-        text = italic_pattern.sub(r'\\textit{\2}', text)
-        text = bold_italic_pattern.sub(r'\\textbf{\\textit{\2}}', text)
-        text = monospace_pattern.sub(r'\\texttt{\1}', text)
-
         tex_kwargs = define_default_kwargs(
             tex_kwargs,
             tex_template=self.tex_template,
@@ -203,7 +200,6 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         tex_kwargs["tex_template"] = update_tex_enviroment_using_box(
             box, tex_kwargs["font_size"], tex_kwargs["tex_template"],
         )
-
 
         text_mo = Ptex(text, subslide_number=self.subslide_number,
                        **tex_kwargs)
@@ -259,31 +255,30 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         return img_mo
 
     def add_paragraph(self, text, box="active", **tex_kwargs):
-        math_mode_re = re.compile(r'\$\$(.*?)\$\$', re.DOTALL)
-        mm_text = re.finditer(math_mode_re, text)
-        mm_idx = sum([[m.start(), m.end()] for m in mm_text], [])
-
-        if not mm_idx:
-            return self.add_text(text, box=box, **tex_kwargs)
+        tokens = MarkdownIt("commonmark").use(
+            dollarmath_plugin, allow_space=True, double_inline=True
+        ).parse(text)
+        nodes = SyntaxTreeNode(tokens)[0]
+        if nodes.type == "math_block":
+            t = self.render_md(nodes)[2:-3].strip()
+            return self.add_math(t, box=box, **tex_kwargs)
+        else:
+            nodes = nodes[0]
 
         mo_vgroup = VGroup()
+        acc_text = ""
+        for node in nodes:
+            if node.type == "math_inline_double":
+                mo = self.add_text(acc_text, box=box, **tex_kwargs)
+                mo_vgroup.add(mo)
+                acc_text = ""
 
-        start_with_text = text[:mm_idx[0]]
-        if start_with_text:
-            mo = self.add_text(start_with_text, box=box, **tex_kwargs)
-            mo_vgroup.add(mo)
-
-        for i, (sta, end) in enumerate(zip(mm_idx, mm_idx[1:]+[None])):
-            if i % 2 == 0:
-                t = text[sta:end].replace("$$", "")
-                mo = self.add_math(t, box=box, **tex_kwargs)
+                t = self.render_md(node)
+                mo = self.add_math(t[2:-3], box=box, **tex_kwargs)
             else:
-                t = text[sta:end]
-                if t != "\n":
-                    mo = self.add_text(text[sta:end], box=box, **tex_kwargs)
-                else:
-                    continue
-
+                acc_text += self.render_md(node)
+        if acc_text:
+            mo = self.add_text(acc_text, box=box, **tex_kwargs)
             mo_vgroup.add(mo)
 
         return mo_vgroup
