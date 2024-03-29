@@ -4,11 +4,11 @@ from manim import Tex, Text
 from ..utils.latex import process_enhanced_text
 from ..utils.others import define_default_kwargs
 from ..properties import funcs_from_props
+from ..globals import ids
 
 
 class Ptex(Tex):
     def __init__(self, text, style="regular",
-                 pvars: dict | None = None,
                  subslide_number: int | None = None,
                  **tex_kwargs):
 
@@ -31,19 +31,17 @@ class Ptex(Tex):
         for imo, props in ismo_props_zip:
             mo = self if imo == -1 else self.submobjects[imo]
 
-            if 'svar' in props:
-                props['var'] = props['svar']
+            if 'sid' in props:
+                props['id'] = props['sid']
                 mo.set(box="null")
 
-            if 'var' in props:
-                name = props.pop('var')
-                if pvars is None:
-                    raise ValueError("'pvars' is None")
+            if 'id' in props:
+                name = props.pop('id')
 
-                if name == "_":
-                    pvars[name] = [mo]
+                if name == 0:
+                    ids[name] = [mo]
                 else:
-                    pvars[name].append(mo)
+                    ids[name].append(mo)
 
                 if subslide_number is not None:
                     mo.origin_subslide_number = subslide_number

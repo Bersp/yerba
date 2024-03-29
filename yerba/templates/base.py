@@ -20,7 +20,6 @@ from ..utils.constants import DOWN, LEFT, ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT
 class PresentationTemplateAbstract(metaclass=ABCMeta):
     slide_number: int
     subslide_number: int
-    pvars: dict[str, list]
     current_slide: Slide
 
     tex_template: TexTemplate
@@ -213,7 +212,6 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
             tex_environment="justify",
             font_size=self.template_params["text.font_size"],
             color=self.template_params["text.color"],
-            pvars=self.pvars
         )
 
         box = self.get_box(box)
@@ -242,7 +240,6 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
             tex_environment="align*",
             font_size=self.template_params["math.font_size"],
             color=self.template_params["math.color"],
-            pvars=self.pvars
         )
 
         box = self.get_box(box)

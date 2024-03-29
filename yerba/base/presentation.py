@@ -10,6 +10,7 @@ from manim import VMobject, logger
 from .slide import Slide
 from .box import Box
 from ..utils.latex import YerbaRenderers
+from ..globals import ids
 
 
 def make_presentation_from_template(template_name, custom_template_name):
@@ -55,14 +56,12 @@ def make_presentation_from_template(template_name, custom_template_name):
             self.slide_number: int = -1
             self.subslide_number: int = 0
             self.current_slide: Slide | None = None
-            self.pvars: dict = defaultdict(list)
 
             self.renderer: MDRenderer = MDRenderer()
             self.yerba_renderers: YerbaRenderers = YerbaRenderers()
 
         def new_slide(self, slide_number=None) -> Slide:
             self.named_boxes.set_current_box('new_slide_default')
-            self.pvars: dict = defaultdict(list)
 
             # write last slide before create a new one
             if self.current_slide is not None:
@@ -163,38 +162,38 @@ def make_presentation_from_template(template_name, custom_template_name):
                 raise ValueError("The presentation does not have any slide")
             return self.current_slide.remove_from_subslide(mobjects)
 
-        def apply(self, mo_or_pvar, *args, **kwargs):
+        def apply(self, mo_or_id, *args, **kwargs):
             if self.current_slide is None:
                 raise ValueError("The presentation does not have any slide")
 
-            if isinstance(mo_or_pvar, str) and mo_or_pvar in self.pvars:
+            if isinstance(mo_or_id, str) and mo_or_id in ids:
                 return [self.current_slide
                         .apply_func_to_mobject(mo, *args, **kwargs)
-                        for mo in self.pvars[mo_or_pvar]]
+                        for mo in ids[mo_or_id]]
             else:
-                return self.current_slide.apply_func_to_mobject(mo_or_pvar, *args, **kwargs)
+                return self.current_slide.apply_func_to_mobject(mo_or_id, *args, **kwargs)
 
-        def modify(self, mo_or_pvar, *args, **kwargs):
+        def modify(self, mo_or_id, *args, **kwargs):
             if self.current_slide is None:
                 raise ValueError("The presentation does not have any slide")
 
-            if isinstance(mo_or_pvar, str) and mo_or_pvar in self.pvars:
+            if isinstance(mo_or_id, int) and mo_or_id in ids:
                 return [self.current_slide
                         .modify_mobject_props(mo, *args, **kwargs)
-                        for mo in self.pvars[mo_or_pvar]]
+                        for mo in ids[mo_or_id]]
             else:
-                return self.current_slide.modify_mobject_props(mo_or_pvar,
-                                                               *args, **kwargs)
+                return self.current_slide.modify_mobject_props(
+                    mo_or_id, *args, **kwargs)
 
         def become(self, old: VMobject | str, new: VMobject | str,
                    *args, **kwargs):
             if self.current_slide is None:
                 raise ValueError("The presentation does not have any slide")
 
-            if isinstance(old, str) and old in self.pvars:
-                old = self.pvars[old][0]
-            if isinstance(new, str) and new in self.pvars:
-                new = self.pvars[new][0]
+            if isinstance(old, str) and old in ids:
+                old = ids[old][0]
+            if isinstance(new, str) and new in ids:
+                new = ids[new][0]
 
             if "position" in kwargs:
                 kwargs["position"] = {
@@ -210,11 +209,11 @@ def make_presentation_from_template(template_name, custom_template_name):
                 f_args=[new], *args, **kwargs
             )
 
-        def hide(self, mo_or_pvar):
-            return self.modify(mo_or_pvar, hide=True)
+        def hide(self, mo_or_id):
+            return self.modify(mo_or_id, hide=True)
 
-        def unhide(self, mo_or_pvar):
-            return self.modify(mo_or_pvar, hide=False)
+        def unhide(self, mo_or_id):
+            return self.modify(mo_or_id, hide=False)
 
         mod = modify
         app = apply

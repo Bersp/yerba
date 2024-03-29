@@ -162,7 +162,7 @@ class MainRutine:
             if t.strip().startswith("! `"):
                 # TODO(bersp): Use regex to identify >!`(.*)`
                 command = t.replace("!", "").replace("`", "").strip()
-                command = "p = self.p; pvars = self.p.pvars;" + command
+                command = "p = self.p;" + command
                 exec_and_handle_exeption(
                     lambda self, c: exec(c),
                     msg=f">{t}", f_kwargs=dict(self=self, c=command)
@@ -175,7 +175,6 @@ class MainRutine:
 
                 def exec_command(self, command, args):
                     p = self.p
-                    pvars = self.p.pvars
                     if args:
                         locals()[command] = eval(
                             f"self.p.{command}({args[0]})"
@@ -190,8 +189,7 @@ class MainRutine:
 
     def compute_python_yerba_block(self, node):
         p = self.p
-        pvars = self.p.pvars
-        command = "p = self.p; pvars = self.p.pvars;"+node.content
+        command = "p = self.p;"+node.content
         exec_and_handle_exeption(
             lambda self, c: exec(c), error_type="custom",
             msg="There seems to be an error in the yerba mate code.",
