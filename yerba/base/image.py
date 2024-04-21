@@ -85,7 +85,7 @@ class ImageSvgBase(VGroup):
 
 class ImageSvg(ImageSvgBase):
     def __init__(self, filename, width=None, height=None,
-                 draft_mode=False):
+                 draft_mode=False, **_):
 
         fw, fh = Image.open(filename).size
         width, height = self._get_width_and_height(width, height, fw, fh)
@@ -107,11 +107,11 @@ class ImageSvg(ImageSvgBase):
 
 class ImagePDFSvg(ImageSvgBase):
     def __init__(self, filename, width=None, height=None,
-                 draft_mode=False):
+                 backend='poppler', draft_mode=False, **_):
         if not shutil.which("inkscape"):
             raise FileNotFoundError("Inkscape is required to use PDF images.")
 
-        svg_str_raw = self._get_svg_str_raw(filename)
+        svg_str_raw = self._get_svg_str_raw(filename, backend)
         self.xml_tree = ElementTree.fromstring(svg_str_raw)
 
         fw = float(self.xml_tree.get('width').replace("pt", ""))
@@ -131,11 +131,16 @@ class ImagePDFSvg(ImageSvgBase):
         s = ElementTree.tostring(self.xml_tree, encoding='unicode')
         return s
 
-    def _get_svg_str_raw(self, filename):
-        s = subprocess.run(["inkscape",
-                            "--pdf-poppler",
-                            "--export-plain-svg", "--export-type=svg",
-                            "--export-filename=-", filename],
+    def _get_svg_str_raw(self, filename, backend):
+        assert backend == "poppler" or backend == "internal", (
+            "Backend must be 'poppler' or 'internal'"
+        )
+        opts = ["--export-plain-svg",
+                "--export-type=svg",
+                "--export-filename=-"]
+        if backend == "poppler":
+            opts.append("--pdf-poppler")
+        s = subprocess.run(["inkscape", *opts, filename],
                            stdout=subprocess.PIPE, stderr=open(os.devnull, "w")
                            ).stdout.decode("utf-8")
 
