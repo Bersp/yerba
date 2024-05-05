@@ -1,4 +1,4 @@
-name: Publish mate to PyPI and TestPyPI
+name: Publish yerba to PyPI and TestPyPI
 on:
   push:
     tags: ["v*", "test-v*"]
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/mate
+      url: https://pypi.org/p/yerba
     permissions:
       id-token: write
 
@@ -104,7 +104,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/mate
+      url: https://test.pypi.org/p/yerba
 
     permissions:
       id-token: write
