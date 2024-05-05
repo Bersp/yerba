@@ -3,11 +3,12 @@ from manim import Mobject, VGroup, Rectangle
 from collections.abc import Iterable, Callable
 
 from ..defaults import colors
-from ..properties import funcs_from_props
 from ..utils.constants import (
     SLIDE_HEIGHT, SLIDE_WIDTH, UP, LEFT, RIGHT, ORIGIN
 )
-from ..utils.others import restructure_list_to_exclude_certain_family_members
+from ..utils.others import (
+    restructure_list_to_exclude_certain_family_members, LinkedPositions
+)
 from .box import Box
 from .image import ImageSvg, ImagePDFSvg
 from manim_mobject_svg import *
@@ -105,7 +106,7 @@ class Slide:
             SubSlide(slide_number, self.subslide_number, background=background)
         ]
 
-        self.following_mobjects: list[tuple[Mobject, Mobject]] = []
+        self.linked_positions: list[LinkedPositions] = []
         self.boxes: list[Box] = []
 
     def add_new_subslide(self, n=1, background=None) -> None:
@@ -123,83 +124,6 @@ class Slide:
         else:
             raise TypeError("'n' must be an int")
 
-    def apply_func_to_mobject(self, mobject, funcs, position="original",
-                              f_args=None, f_kwargs=None) -> Mobject:
-        """
-        Apply a function or a list of functions to a Mobject.
-
-        Parameters
-        ----------
-        mobject : Mobject
-            The Mobject to modify.
-        funcs : callable or list of callable
-            The function or list of functions to apply to the Mobject.
-        position : str, optional
-            Specifies where the modified Mobject should be positioned.
-        f_args : list, optional
-            Positional arguments for the functions.
-        f_kwargs : dict, optional
-            Keyword arguments for the functions.
-
-        Returns
-        -------
-        Mobject
-            The modified Mobject.
-        """
-
-        if f_args is None:
-            f_args = []
-        if f_kwargs is None:
-            f_kwargs = {}
-
-        if mobject.origin_subslide_number == self.subslide_number:
-            modified_mobject = mobject
-        else:
-            modified_mobject = mobject.copy()
-
-        if isinstance(funcs, Callable):
-            funcs(modified_mobject, *f_args, **f_kwargs)
-        elif isinstance(funcs, Iterable):
-            for f in funcs:
-                f(modified_mobject, *f_args, **f_kwargs)
-        else:
-            raise TypeError("'func' must be callable or list of callables")
-
-        if mobject.origin_subslide_number != self.subslide_number:
-            self._replace_from_last_subslide(mobject, modified_mobject)
-            if position == "original":
-                self.following_mobjects.append((modified_mobject, mobject))
-            elif position == "modified":
-                mobject.box.replace(mobject, modified_mobject)
-                self.following_mobjects.append((mobject, modified_mobject))
-            elif position == "independent":
-                pass
-            else:
-                raise ValueError(
-                    f"'position' must be 'original' or 'independent' not {repr(position)}"
-                )
-
-        return modified_mobject
-
-    def modify_mobject_props(self, mobject, **props) -> Mobject:
-        """
-        Modify properties of a mobject,
-
-        Parameters
-        ----------
-        mobject : mobject(s)
-            The mobject to modify.
-        **props
-            Properties to modify.
-        """
-        funcs = funcs_from_props(props)
-
-        modified_mobject = self.apply_func_to_mobject(
-            mobject=mobject,
-            funcs=funcs,
-        )
-        return modified_mobject
-
     def add_to_subslide(self, mobjects: list, idx=-1) -> list:
         """
         Add mobjects to a subslide.
@@ -214,7 +138,7 @@ class Slide:
 
         to_add = []
         for mo in mobjects:
-            box = self._check_if_box_already_exists(mo.box)
+            box = self._get_box_if_already_exists(mo.box)
             if not box.is_null:
                 mo.origin_subslide_number = self.subslide_number
                 box.add(mo)
@@ -239,11 +163,42 @@ class Slide:
         for box in self.boxes:
             box.auto_arrange()
 
-        for m_mo in self.following_mobjects:
-            m_mo[0].move_to(m_mo[1].get_center())
+        self.arrange_linked_positions()
 
         for ss in self.subslides:
             ss.write()
+
+    def arrange_linked_positions(self):
+        for lmp in self.linked_positions:
+            if isinstance(lmp.source, list):
+                src_list = lmp.source
+            else:
+                src_list = [lmp.source]
+            dst = lmp.destination
+
+            if lmp.arrange == "dest":
+                arrange = dst[0].box.arrange
+            elif isinstance(lmp.arrange, Box):
+                arrange = lmp.arrange.arrange
+            else:
+                arrange = lmp.arrange
+
+            assert isinstance(arrange, str)
+
+            if arrange == "center":
+                VGroup(*src_list).align_to(dst, UP)
+            elif arrange == "relative center":
+                VGroup(*src_list).move_to(dst)
+            else:
+                d1, d2 = arrange.split(" ")
+                alignment = ORIGIN.copy()
+                if d1 == "top":
+                    alignment += UP
+                if d2 == "left":
+                    alignment += LEFT
+                elif d2 == "right":
+                    alignment += RIGHT
+                VGroup(*src_list).align_to(dst, alignment)
 
     def _add_to_subslide(self, mobjects, idx=-1):
         self.subslides[idx].add(mobjects)
@@ -255,7 +210,7 @@ class Slide:
         self._remove_from_subslide(old_mobject, idx=-1)
         self._add_to_subslide(new_mobject, idx=-1)
 
-    def _check_if_box_already_exists(self, box):
+    def _get_box_if_already_exists(self, box):
         """
         Get box if exists in self.boxes, add to it if not.
         """

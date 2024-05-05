@@ -1,20 +1,24 @@
 from __future__ import annotations
 import re
 from functools import cached_property
-from manim import (VMobject, VGroup, TexTemplate, Rectangle)
 from abc import ABCMeta, abstractmethod
+from typing import Iterable
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 from mdit_py_plugins.dollarmath import dollarmath_plugin
 
-from ..utils.others import define_default_kwargs
-from ..utils.latex import update_tex_enviroment_using_box, add_font_to_preamble
 from ..base.image import ImageSvg, ImagePDFSvg
 from ..base.ptext import Ptex
 from ..base.box import Box, NamedBoxes
 from ..base.slide import Slide
-
+from ..properties import funcs_from_props
+from ..utils.others import define_default_kwargs, LinkedPositions
+from ..utils.latex import update_tex_enviroment_using_box, add_font_to_preamble
+from ..utils.parser import get_markdownit_nodes
 from ..utils.constants import DOWN, LEFT, ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT
+from ..globals import g_ids
+
+from manim import *  # to ensure access to manim from python_yerba
 
 
 class PresentationTemplateAbstract(metaclass=ABCMeta):
@@ -34,7 +38,7 @@ class PresentationTemplateAbstract(metaclass=ABCMeta):
 
     @abstractmethod
     def add(self, mobjects: VMobject | list[VMobject],
-            box: Box | str) -> VMobject:
+            box: Box | str = None) -> VMobject:
         pass
 
     @abstractmethod
@@ -205,9 +209,11 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
 
     # -- specialized functions (you probably don't want to modify these)
 
-    def add_text(self, text, box="null", **tex_kwargs):
-        tex_kwargs = define_default_kwargs(
-            tex_kwargs,
+    def add_latex_text(self, text, box="null", **text_props):
+        funcs, text_props = funcs_from_props(text_props,
+                                             only_custom_props=True)
+        text_props = define_default_kwargs(
+            text_props,
             tex_template=self.tex_template,
             tex_environment="justify",
             font_size=self.template_params["text.font_size"],
@@ -216,12 +222,12 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
 
         box = self.get_box(box)
 
-        tex_kwargs["tex_template"] = update_tex_enviroment_using_box(
-            box, tex_kwargs["font_size"], tex_kwargs["tex_template"],
+        text_props["tex_template"] = update_tex_enviroment_using_box(
+            box, text_props["font_size"], text_props["tex_template"],
         )
 
         text_mo = Ptex(text, subslide_number=self.subslide_number,
-                       **tex_kwargs)
+                       **text_props)
 
         predefined_box = getattr(text_mo, "box", None)
         if predefined_box is None:
@@ -229,13 +235,18 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         else:
             text_mo.set(box=self.get_box(predefined_box))
 
+        for f in funcs:
+            f(text_mo)
+
         self.add(text_mo)
 
         return text_mo
 
-    def add_math(self, text, box="null", **tex_kwargs):
-        tex_kwargs = define_default_kwargs(
-            tex_kwargs,
+    def add_latex_math(self, text, box="null", **text_props):
+        funcs, text_props = funcs_from_props(text_props,
+                                             only_custom_props=True)
+        text_props = define_default_kwargs(
+            text_props,
             tex_template=self.tex_template,
             tex_environment="align*",
             font_size=self.template_params["math.font_size"],
@@ -245,7 +256,7 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         box = self.get_box(box)
 
         math_mo = Ptex(text, subslide_number=self.subslide_number,
-                       **tex_kwargs)
+                       **text_props)
 
         predefined_box = getattr(math_mo, "box", None)
         if predefined_box is None:
@@ -253,12 +264,16 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         else:
             math_mo.set(box=self.get_box(predefined_box))
 
+        for f in funcs:
+            f(math_mo)
+
         self.add(math_mo)
 
         return math_mo
 
     def add_image(self, filename, box="active", arrange='hcenter',
                   **img_args):
+        funcs, img_args = funcs_from_props(img_args, only_custom_props=True)
 
         box = self.get_box(box)
 
@@ -270,36 +285,131 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         img_mo = img_mo.set(box=box, box_arrange=arrange)
         self.add(img_mo)
 
+        for f in funcs:
+            f(img_mo)
+
         return img_mo
 
-    def add_paragraph(self, text, box="active", **tex_kwargs):
+    def add_paragraph(self, text, box="active", **text_props):
         tokens = MarkdownIt("commonmark").use(
             dollarmath_plugin, allow_space=True, double_inline=True
         ).parse(text)
         nodes = SyntaxTreeNode(tokens)[0]
+
+        box = self.get_box(box)
+
         if nodes.type == "math_block":
             t = self.render_md(nodes)[2:-3].strip()
-            return self.add_math(t, box=box, **tex_kwargs)
+            return self.add_latex_math(t, box=box, **text_props)
         else:
             nodes = nodes[0]
 
-        mo_vgroup = VGroup()
+        mo_vg = VGroup()
         acc_text = ""
         for node in nodes:
             if node.type == "math_inline_double":
-                mo = self.add_text(acc_text, box=box, **tex_kwargs)
-                mo_vgroup.add(mo)
+                acc_text = acc_text.strip()
+                if acc_text:
+                    mo = self.add_latex_text(acc_text, box=box, **text_props)
+                    mo_vg.add(mo)
                 acc_text = ""
 
                 t = self.render_md(node)
-                mo = self.add_math(t[2:-3], box=box, **tex_kwargs)
+                mo = self.add_latex_math(t[2:-3], box=box, **text_props)
+                mo_vg.add(mo)
             else:
                 acc_text += self.render_md(node)
         if acc_text:
-            mo = self.add_text(acc_text, box=box, **tex_kwargs)
-            mo_vgroup.add(mo)
+            mo = self.add_latex_text(acc_text, box=box, **text_props)
+            mo_vg.add(mo)
 
-        return mo_vgroup
+        mo_vg.set(box=box)
+
+        return mo_vg
+
+    def python_yerba_block(self, content):
+        p = self
+        exec("p = self;"+content)
+
+    def md_alternate_block(self, content, arrange=None):
+        nodes = get_markdownit_nodes(content)
+
+        content_mo_list = []
+        content_mo = []
+        add_box = "active"
+        for node in nodes:
+            if node.type == "hr":
+                content_mo_list.append(content_mo)
+                content_mo = []
+                add_box = "null"
+            else:
+                mo = self.compute_slide_content(node, box=add_box)
+                content_mo.append(mo)
+        content_mo_list.append(content_mo)
+
+        vg_track = VGroup(*content_mo_list[0])
+        for ii in range(len(content_mo_list)-1):
+            self.pause()
+            self.remove(content_mo_list[ii])
+
+            box_copy = Box.from_box(content_mo_list[ii][0].box)
+            for mo in content_mo_list[ii+1]:
+                self.add(mo, box=box_copy)
+            self.current_slide.linked_positions.append(
+                LinkedPositions(
+                    source=content_mo_list[ii+1],
+                    destination=vg_track,
+                    arrange=arrange or box_copy.arrange
+                )
+            )
+            box_copy.auto_arrange()
+
+    def md_fragment_block(self, content, *args, **properties):
+        nodes = get_markdownit_nodes(content)
+
+        assert len(args) == 0, "Fragment blocks only accept keyword arguments"
+
+        if "box" in properties:
+            box = properties.pop("box")
+        else:
+            box = "active"
+
+        for node in nodes:
+            self.compute_slide_content(node, box=box, **properties)
+
+    def md_overwrite_block(self, content, *args, **properties):
+        assert (
+            len(args) == 1 and isinstance(args[0], int)
+            and args[0] in g_ids
+        ), ("The first argument of an overwrite block "
+            "must be a previously defined id")
+        id = args[0]
+        original_mo_l = g_ids.pop(id)
+
+        nodes = get_markdownit_nodes(content)
+
+        if "box" in properties:
+            box_copy = self.get_box(properties.pop("box"))
+        else:
+            box_copy = Box.from_box(original_mo_l[0].box)
+
+        if "arrange" in properties:
+            arrange = properties.pop("arrange")
+        else:
+            arrange = box_copy.arrange
+
+        new_mo_l = []
+        self.remove(original_mo_l)
+        for node in nodes:
+            mo = self.compute_slide_content(node, box=box_copy, **properties)
+            new_mo_l.append(mo)
+            g_ids[id].append(mo)
+        box_copy.auto_arrange()
+
+        self.current_slide.linked_positions.append(
+            LinkedPositions(source=new_mo_l,
+                            destination=VGroup(*original_mo_l),
+                            arrange=arrange))
 
     def vspace(self, size=0.25):
         box = self.get_box("active")
@@ -318,3 +428,10 @@ class PresentationTemplateBase(PresentationTemplateAbstract):
         )
         if self.template_params["add_footer"]:
             self.add_footer()
+
+    # -- QOL functions
+
+    def add_text(self, *args, box="null", **kwargs):
+        return self.add_paragraph(*args, box="null", **kwargs)
+    
+    add_math = add_latex_math

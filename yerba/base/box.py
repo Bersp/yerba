@@ -15,7 +15,7 @@ class Box():
     def __init__(self, center: np.ndarray,
                  width: float, height: float, arrange: str | None = "top left",
                  arrange_buff: float = box_params["arrange_buff"],
-                 is_null: bool = False):
+                 is_null: bool = False, is_unique=False):
 
         self.center = center
         self.width = width
@@ -23,6 +23,7 @@ class Box():
         self.arrange = None if arrange == "none" else arrange
         self.arrange_buff = arrange_buff
         self.is_null = is_null
+        self.is_unique = is_unique
 
         self.grid: dict[str, Box] | None = None
         self.mobjects: list = []
@@ -47,34 +48,30 @@ class Box():
         )
 
     @classmethod
-    def from_box(cls, box, **kwargs):
-        return cls(center=box.center,
+    def from_box(cls, box):
+        return cls(center=box.center.copy(),
                    width=box.width, height=box.height,
-                   arrange=box.arrange)
+                   arrange=box.arrange, is_unique=True)
 
     @classmethod
-    def get_full_box(cls, arrange):
-        return cls(ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT, arrange=arrange)
+    def get_full_box(cls, **kwargs):
+        return cls(ORIGIN, SLIDE_WIDTH, SLIDE_HEIGHT, **kwargs)
 
     @classmethod
-    def get_left_box(cls, width, *, arrange):
-        return cls(LEFT_EDGE+RIGHT*width/2, width, SLIDE_HEIGHT,
-                   arrange=arrange)
+    def get_left_box(cls, width, **kwargs):
+        return cls(LEFT_EDGE+RIGHT*width/2, width, SLIDE_HEIGHT, **kwargs)
 
     @classmethod
-    def get_right_box(cls, width, *, arrange):
-        return cls(RIGHT_EDGE+LEFT*width/2, width, SLIDE_HEIGHT,
-                   arrange=arrange)
+    def get_right_box(cls, width, **kwargs):
+        return cls(RIGHT_EDGE+LEFT*width/2, width, SLIDE_HEIGHT, **kwargs)
 
     @classmethod
-    def get_top_box(cls, height, *, arrange):
-        return cls(TOP_EDGE+DOWN*height/2, SLIDE_WIDTH, height,
-                   arrange=arrange)
+    def get_top_box(cls, height, **kwargs):
+        return cls(TOP_EDGE+DOWN*height/2, SLIDE_WIDTH, height, **kwargs)
 
     @classmethod
-    def get_bottom_box(cls, height, *, arrange):
-        return cls(BOTTOM_EDGE+UP*height/2, SLIDE_WIDTH, height,
-                   arrange=arrange)
+    def get_bottom_box(cls, height, **kwargs):
+        return cls(BOTTOM_EDGE+UP*height/2, SLIDE_WIDTH, height, **kwargs)
 
     @classmethod
     def get_inner_box(cls, *, left_box=None, right_box=None,
@@ -89,7 +86,7 @@ class Box():
         bg = SLIDE_Y_RAD + bottom_box.center[1] + bottom_box.height/2 \
             if bottom_box else 0
 
-        box = cls.get_full_box(arrange)
+        box = cls.get_full_box(arrange=arrange)
         box.shrink(left_gap=lg, right_gap=rg, top_gap=tg, bottom_gap=bg)
 
         return box
@@ -113,9 +110,10 @@ class Box():
 
     def add(self, mobject) -> None:
         if hasattr(mobject, "width_units") and mobject.width_units == "box":
-            mobject.set(width=self.width*mobject.width)
+            mobject.set(width=self.width*mobject.width, width_units="manim")
         if hasattr(mobject, "height_units") and mobject.height_units == "box":
-            mobject.set(height=self.height*mobject.height)
+            mobject.set(height=self.height*mobject.height,
+                        height_units="manim")
 
         self.mobjects.append(mobject)
 
@@ -317,6 +315,8 @@ class Box():
     # ---
 
     def __eq__(self, other_box):
+        if self.is_unique or other_box.is_unique:
+            return False
         return (np.all(self.center == other_box.center) and
                 self.width == other_box.width and
                 self.height == other_box.height and

@@ -16,6 +16,13 @@ def is_h1(node):
     return node.type == 'heading' and node.tag == 'h1'
 
 
+def get_markdownit_nodes(text):
+    md = (MarkdownIt("commonmark")
+          .use(front_matter_plugin)
+          .use(dollarmath_plugin, allow_space=True, double_inline=True))
+    return SyntaxTreeNode(md.parse(text))
+
+
 def get_slides_md_nodes(md_file, old_md_file) -> list[dict]:
     if old_md_file is None:
         old_text = '#'
@@ -26,15 +33,9 @@ def get_slides_md_nodes(md_file, old_md_file) -> list[dict]:
     with open(md_file, "r") as f:
         text = f.read()
 
-    md = (MarkdownIt("commonmark")
-          .use(front_matter_plugin)
-          .use(dollarmath_plugin, allow_space=True, double_inline=True)
-          )
-    tokens = md.parse(text)
-    nodes = SyntaxTreeNode(tokens)
+    nodes = get_markdownit_nodes(text)
 
-    tokens = md.parse(old_text)
-    old_nodes = SyntaxTreeNode(tokens)
+    old_nodes = get_markdownit_nodes(old_text)
 
     old_idx = 0
     old_idx_max = len(tuple(old_nodes))-1

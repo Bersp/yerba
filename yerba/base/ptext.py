@@ -4,7 +4,7 @@ from manim import Tex, Text
 from ..utils.latex import process_enhanced_text
 from ..utils.others import define_default_kwargs
 from ..properties import funcs_from_props
-from ..globals import ids
+from ..globals import g_ids
 
 
 class Ptex(Tex):
@@ -39,14 +39,14 @@ class Ptex(Tex):
                 name = props.pop('id')
 
                 if name == 0:
-                    ids[name] = [mo]
+                    g_ids[name] = [mo]
                 else:
-                    ids[name].append(mo)
+                    g_ids[name].append(mo)
 
                 if subslide_number is not None:
                     mo.origin_subslide_number = subslide_number
 
-            funcs = funcs_from_props(props)
+            funcs, _ = funcs_from_props(props)
             for f in funcs:
                 f(mo)
 

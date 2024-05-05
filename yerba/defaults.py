@@ -56,3 +56,17 @@ template_params: dict[str, str | float | bool] = {
 box_params: dict[str, float] = {
     "arrange_buff": 0.25,
 }
+
+
+codeblocks_namedict = {
+    "python_yerba": ["python yerba", "yerba"],
+    "md_alternate": ["md alt", "md alternate",
+                     "markdown alt", "markdown alternate",
+                     "alt", "alternate"],
+    "md_fragment": ["md frag", "md fragment",
+                    "markdown frag", "markdown fragment",
+                    "frag", "fragment"],
+    "md_overwrite": ["md overwrite", "md overw",
+                     "markdown overwrite", "markdown overw",
+                     "overwrite", "overw"],
+}

@@ -1,8 +1,47 @@
+from __future__ import annotations
 import os
 import shutil
+from typing import NamedTuple
 from manim.utils.family import extract_mobject_family_members
-from manim import Mobject
-from manim import logger
+from manim import Mobject, VGroup
+from manim import logger, console
+from ..defaults import parser_params
+
+
+class LinkedPositions(NamedTuple):
+    source: Mobject | list[Mobject]
+    destination: Mobject | VGroup
+    arrange: str | "Box" = None
+
+
+def exec_and_handle_exeption(func, msg, error_type="inline",
+                             f_args=None, f_kwargs=None, verbose=None):
+    f_args = f_args or tuple()
+    f_kwargs = f_kwargs or dict()
+
+    if verbose is None:
+        verbose = parser_params["errors.verbose"]
+    try:
+        return func(*f_args, **f_kwargs)
+    except BaseException as e:
+        if verbose:
+            console.print_exception(suppress=(__file__, ))
+
+        elif error_type == "inline":
+            t = (msg.replace(r"%20", r" ")
+                 .replace(r"%22", r'"')
+                 .replace(r"%5B", r"[")
+                 .replace(r"%5D", r"]"))
+            logger.error(
+                f"There seems to be an error with the following line:\n{t}"
+                f"\nPython error: {e}"
+            )
+        elif error_type == "custom":
+            logger.error(msg+f"\nPython error: {e}")
+        else:
+            raise ValueError("'error_type' must be 'inline' or 'custom'")
+
+        quit()
 
 
 def define_default_kwargs(new, **defaults):
@@ -88,6 +127,7 @@ def create_folder_structure():
 
     if not os.path.exists("./media/old_slides"):
         os.mkdir("./media/old_slides")
+
 
 def check_dependencies():
     if not shutil.which("rsvg-convert"):
